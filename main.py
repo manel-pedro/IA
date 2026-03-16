@@ -11,24 +11,22 @@ def read_input():
 def distance(a, b, x, y):
     return abs(a - x) + abs(b - y)
 
-def can_take_ride(car, ride, current_time, score, bonus):
+def can_take_ride(car, ride, bonus):
     a, b, x, y, s, f = ride
     time_to_start = distance(car["pos"][0], car["pos"][1], a, b)
-    arrival_time = current_time + time_to_start
+    arrival_time = car["time"] + time_to_start
 
-    if arrival_time > f:
-        return False, 0
+    start_time = max(arrival_time, s)
+    ride_distance = distance(a, b, x, y)
+    finish_time = start_time + ride_distance
+    if finish_time > f:
+        return False, 0, None
+
+    score = ride_distance
     if arrival_time <= s:
         score += bonus
 
-    start_time = max(arrival_time, s)
-    finish_time = start_time + distance(a, b, x, y)
-    
-    if finish_time > f:
-        return False, 0
-    
-    score += finish_time - start_time
-    return True, score
+    return True, score, finish_time
 
 def main():
     R, C, F, N, B, T, rides = read_input()   #rows, columns, vehicles, rides, bonus, steps
@@ -43,21 +41,24 @@ def main():
             "rides": []      
         }
         cars.append(car)
-
-    for car in cars:
-        remaining_rides2 = []
-        for i, ride in remaining_rides:
-            score2= 0
-            ok, s = can_take_ride(car, ride, car["time"], score2, B)
+    
+    #greedy solution
+    for i, ride in remaining_rides:
+        best_score = 0
+        best_finish_time, best_car = None, None
+        for car_id, car in enumerate(cars):
+            ok, ride_score, finish_time = can_take_ride(car, ride, B)
             if ok:
-                time = distance(ride[0],ride[1],ride[2],ride[3])
-                car["rides"].append(i)
-                car["pos"] = (ride[2], ride[3])
-                car["time"] = max(car["time"], ride[4]) + time
-                score += s
-            else:
-                remaining_rides2.append((i,ride))
-        remaining_rides = remaining_rides2
+                efficiency = ride_score / (finish_time - car["time"])
+                if best_car is None or efficiency > best_score or (efficiency == best_score and car["time"] < cars[best_car]["time"]):
+                    best_car = car_id
+                    best_score = efficiency
+                    best_finish_time = finish_time
+        if best_car is not None:
+            score += can_take_ride(cars[best_car], ride, B)[1]
+            cars[best_car]["rides"].append(i)
+            cars[best_car]["pos"] = (ride[2], ride[3])
+            cars[best_car]["time"] = best_finish_time
     
     with open("output.txt", "w") as f:
         for car in cars:
@@ -70,3 +71,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# a melhor solucao e a que tem mais score?
+# por exemplo um carro em (6,0) para percurso ate (6,1) vai ter mais efficiency que um em (0,0) que earliest
+# start e 6 e vai ter mais bonus
