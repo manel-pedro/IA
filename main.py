@@ -42,7 +42,7 @@ def main():
         }
         cars.append(car)
     
-    #greedy solution
+    #Greedy Efficiency Heuristic
     for i, ride in remaining_rides:
         best_score = 0
         best_finish_time, best_car = None, None
