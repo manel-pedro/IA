@@ -11,7 +11,7 @@ This is a combinatorial optimization problem, so metaheuristics are appropriate.
 ## 2) Algorithms to Develop (recommended order)
 
 ### A. Baseline 1: Current Greedy (already exists)
-Keep your current implementation as baseline.
+Keep your current implementation as baveline.
 Output needed:
 - score
 - runtime
