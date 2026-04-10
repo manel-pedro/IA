@@ -1,13 +1,23 @@
+import sys
 from visuals import VisualizadorHashcode
 
 def read_input():
-    R, C, F, N, B, T = map(int, input().split())
-    
     rides = []
-    for _ in range(N):
-        a, b, x, y, s, f = map(int, input().split())  #x1,y1,x2,y2, earliest start, latest finish
-        rides.append((a, b, x, y, s, f))
-
+    if(len(sys.argv) > 1):
+        with open(sys.argv[1], 'r') as file:
+            content = file.read()
+        content = content.split('\n')
+        print(content[0].split())
+        R, C, F, N, B, T = map(int, content[0].split())
+        for i in range(N):
+            a, b, x, y, s, f = map(int, content[i+1].split())  #x1,y1,x2,y2, earliest start, latest finish
+            rides.append((a, b, x, y, s, f))
+    else:
+        R, C, F, N, B, T = map(int, input().split())
+        for _ in range(N):
+            a, b, x, y, s, f = map(int, input().split())  #x1,y1,x2,y2, earliest start, latest finish
+            rides.append((a, b, x, y, s, f))
+    
     return R, C, F, N, B, T, rides
 
 def distance(a, b, x, y):
