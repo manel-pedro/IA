@@ -179,19 +179,11 @@ def solve_smart_greedy(F, B, rides):
 # ==========================================
 
 def main():
-    R, C, F, N, B, T, rides = read_input()   #rows, columns, vehicles, rides, bonus, steps
-    remaining_rides = list(enumerate(rides))
-    score = 0
-
-   cars, final_score = solve_greedy(F, B, rides)
-    
-    write_output(cars, "output.txt")
-    
-    print("The Final Score was:" , score)
+    print("A ler dados do ficheiro...")
+    R, C, F, N, B, T, rides = read_input()
 
     print("A abrir o simulador visual...")
-    app = VisualizadorHashcode(R, C, F, T, B, rides, cars)
-    print("acabou o inicializador")
+    app = VisualizadorHashcode(R, C, F, T, B, rides, solve_greedy, solve_smart_greedy)
     app.iniciar()
 
 
