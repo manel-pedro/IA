@@ -5,8 +5,8 @@ def distance(a, b, x, y):
     return abs(a - x) + abs(b - y)
 
 class VisualizadorHashcode:
-    # Nota que agora recebemos as funções func_greedy e func_smart
-    def __init__(self, R, C, F, T_MAX, B, rides, func_greedy, func_smart, func_hill_climbing, func_simulated_annealing):
+    # Recebemos as 5 funções agora
+    def __init__(self, R, C, F, T_MAX, B, rides, func_greedy, func_smart, func_hill_climbing, func_simulated_annealing, func_genetic):
         self.R = R
         self.C = C
         self.F = F
@@ -19,6 +19,7 @@ class VisualizadorHashcode:
         self.func_smart = func_smart
         self.func_hill_climbing = func_hill_climbing
         self.func_simulated_annealing = func_simulated_annealing
+        self.func_genetic = func_genetic # <--- Corrigido o erro de sintaxe aqui
 
         self.max_canvas_width = 1180
         self.max_canvas_height = 720
@@ -70,16 +71,19 @@ class VisualizadorHashcode:
         if tipo == 1:
             self.cars_schedule, self.pontuacao_final_calculada = self.func_greedy(self.F, self.B, self.rides)
             self.lbl_algo_ativo.config(text="Ativo: Greedy Simples")
-        else:
-            if tipo == 2:
-                self.cars_schedule, self.pontuacao_final_calculada = self.func_smart(self.F, self.B, self.rides)
-                self.lbl_algo_ativo.config(text="Ativo: Smart Greedy")
-            elif tipo == 3:
-                self.cars_schedule, self.pontuacao_final_calculada = self.func_hill_climbing(self.F, self.B, self.rides)
-                self.lbl_algo_ativo.config(text="Ativo: Hill Climbing")
-            else:
-                self.cars_schedule, self.pontuacao_final_calculada = self.func_simulated_annealing(self.F, self.B, self.rides)
-                self.lbl_algo_ativo.config(text="Ativo: Simulated Annealing")
+        elif tipo == 2:
+            self.cars_schedule, self.pontuacao_final_calculada = self.func_smart(self.F, self.B, self.rides)
+            self.lbl_algo_ativo.config(text="Ativo: Smart Greedy")
+        elif tipo == 3:
+            self.cars_schedule, self.pontuacao_final_calculada = self.func_hill_climbing(self.F, self.B, self.rides)
+            self.lbl_algo_ativo.config(text="Ativo: Hill Climbing")
+        elif tipo == 4:
+            self.cars_schedule, self.pontuacao_final_calculada = self.func_simulated_annealing(self.F, self.B, self.rides)
+            self.lbl_algo_ativo.config(text="Ativo: Simulated Annealing")
+        elif tipo == 5:
+            # Adicionada a chamada para o Algoritmo Genético
+            self.cars_schedule, self.pontuacao_final_calculada = self.func_genetic(self.F, self.B, self.rides)
+            self.lbl_algo_ativo.config(text="Ativo: Algoritmo Genético")
             
         # Repor a simulação do zero
         self.restart()
@@ -132,6 +136,8 @@ class VisualizadorHashcode:
         ttk.Button(buttons, text="Smart Greedy", style="Dark.TButton", command=lambda: self.mudar_algoritmo(2)).pack(side=tk.LEFT, padx=5)
         ttk.Button(buttons, text="Hill Climbing", style="Dark.TButton", command=lambda: self.mudar_algoritmo(3)).pack(side=tk.LEFT, padx=5)
         ttk.Button(buttons, text="Simulated Annealing", style="Dark.TButton", command=lambda: self.mudar_algoritmo(4)).pack(side=tk.LEFT, padx=5)
+        # --- NOVO BOTÃO PARA O GENÉTICO ---
+        ttk.Button(buttons, text="Genético", style="Dark.TButton", command=lambda: self.mudar_algoritmo(5)).pack(side=tk.LEFT, padx=5)
 
         stats = ttk.Frame(controls, style="Card.TFrame")
         stats.grid(row=1, column=0, sticky="ew", pady=(12, 0))

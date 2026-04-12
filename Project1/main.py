@@ -111,21 +111,15 @@ def solve_smart_greedy(F, B, rides):
     - Escolhe a viagem que minimiza o tempo desperdiçado (viagem vazia + espera).
     - Dá forte prioridade a viagens onde o bónus é garantido.
     """
-    # Usamos um Set para riscar as viagens que já foram atribuídas
     unassigned_rides = set(range(len(rides)))
     score = 0
 
-    # Inicializar frota (adicionamos um "id" para no fim conseguirmos ordenar para o output)
     cars = [{"id": i, "pos": (0,0), "time": 0, "rides": []} for i in range(F)]
     
-    # O loop corre enquanto houver viagens por fazer
     while unassigned_rides:
-        # 1. Escolher o carro que está livre mais cedo
         cars.sort(key=lambda c: c["time"])
         car = cars[0]
         
-        # Se o carro com o tempo mais baixo já tem o tempo "infinito",
-        # significa que NENHUM carro consegue fazer mais nenhuma viagem.
         if car["time"] == float('inf'):
             break
 
@@ -134,11 +128,9 @@ def solve_smart_greedy(F, B, rides):
         best_finish_time = -1
         best_score_earned = 0
         
-        # 2. Procurar a melhor viagem para ESTE carro específico
         for ride_id in unassigned_rides:
             a, b, x, y, s, f = rides[ride_id]
             
-            # Calcular tempos
             dist_to_start = distance(car["pos"][0], car["pos"][1], a, b)
             arrival_time = car["time"] + dist_to_start
             wait_time = max(0, s - arrival_time)
@@ -147,18 +139,15 @@ def solve_smart_greedy(F, B, rides):
             ride_dist = distance(a, b, x, y)
             finish_time = start_time + ride_dist
             
-            # Se não consegue acabar a tempo, ignorar
             if finish_time > f:
                 continue
                 
-            # 3. A NOSSA HEURÍSTICA DE CUSTO (Menor custo = Melhor viagem)
             wasted_time = dist_to_start + wait_time
             cost = wasted_time
             
             earned_points = ride_dist
             if arrival_time <= s:
                 earned_points += B
-                # Se garante bónus, "baixamos" o custo artificialmente para a tornar super atrativa!
                 cost -= (B * 0.8) 
                 
             if cost < best_cost:
@@ -167,7 +156,6 @@ def solve_smart_greedy(F, B, rides):
                 best_finish_time = finish_time
                 best_score_earned = earned_points
                 
-        # 4. Atribuir a viagem ao carro
         if best_ride is not None:
             car["rides"].append(best_ride)
             car["time"] = best_finish_time
@@ -175,11 +163,8 @@ def solve_smart_greedy(F, B, rides):
             unassigned_rides.remove(best_ride)
             score += best_score_earned
         else:
-            # Este carro não consegue fazer mais nenhuma viagem válida até ao fim do mundo.
-            # Metemos o tempo dele a infinito para ele ir para o fim da fila de espera e não travar o loop.
             car["time"] = float('inf')
 
-    # Voltar a ordenar os carros pelo ID original para o output.txt ficar correto
     cars.sort(key=lambda c: c["id"])
     return cars, score
 
@@ -349,6 +334,76 @@ def solve_simulated_annealing(F, B, rides, initial_method="smart", initial_tempe
     return best_cars, best_score
 
 
+def crossover(parent1, parent2, F):
+    child = [[] for _ in range(F)]
+    used_rides = set()
+    
+    for i in range(F // 2):
+        for ride in parent1[i]:
+            if ride not in used_rides:
+                child[i].append(ride)
+                used_rides.add(ride)
+                
+    for i in range(F // 2, F):
+        for ride in parent2[i]:
+            if ride not in used_rides:
+                child[i].append(ride)
+                used_rides.add(ride)
+                
+    return child
+
+def solve_genetic_algorithm(F, B, rides, pop_size=20, generations=100, mutation_rate=0.4):
+    population = []
+    base_sol_smart = build_initial_solution(F, B, rides, "smart")
+    population.append(base_sol_smart)
+    
+    for _ in range(pop_size - 1):
+        mutated = random_neighbor(base_sol_smart)
+        for _ in range(random.randint(1, 5)):
+            mutated = random_neighbor(mutated)
+        population.append(mutated)
+        
+    best_overall_cars = None
+    best_overall_score = float('-inf')
+    
+    for gen in range(generations):
+        fitness_scores = []
+        valid_population = []
+        
+        for sol in population:
+            cars, score = solution_to_cars(sol, rides, B)
+            if cars is not None:
+                fitness_scores.append(score)
+                valid_population.append(sol)
+                if score > best_overall_score:
+                    best_overall_score = score
+                    best_overall_cars = cars
+                    
+        if not valid_population:
+            break
+            
+        paired = list(zip(valid_population, fitness_scores))
+        paired.sort(key=lambda x: x[1], reverse=True)
+        
+        elite_count = max(2, int(pop_size * 0.2))
+        new_population = [p[0] for p in paired[:elite_count]]
+        mating_pool = [p[0] for p in paired[:max(2, len(paired)//2)]]
+        
+        while len(new_population) < pop_size:
+            parent1 = random.choice(mating_pool)
+            parent2 = random.choice(mating_pool)
+            child = crossover(parent1, parent2, F)
+            
+            if random.random() < mutation_rate:
+                child = random_neighbor(child)
+                
+            new_population.append(child)
+            
+        population = new_population
+
+    return best_overall_cars, best_overall_score
+
+
 # ==========================================
 # MAIN
 # ==========================================
@@ -369,6 +424,7 @@ def main():
         solve_smart_greedy,
         solve_hill_climbing,
         solve_simulated_annealing,
+        solve_genetic_algorithm,
     )
     app.iniciar()
 
