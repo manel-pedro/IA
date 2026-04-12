@@ -1,12 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
+import os
+import glob
 
 def distance(a, b, x, y):
     return abs(a - x) + abs(b - y)
 
 class VisualizadorHashcode:
-    # Recebemos as 5 funções agora
-    def __init__(self, R, C, F, T_MAX, B, rides, func_greedy, func_smart, func_hill_climbing, func_simulated_annealing, func_genetic):
+    # Adicionamos 'func_read_file' para o visualizador conseguir carregar novos ficheiros
+    def __init__(self, R, C, F, T_MAX, B, rides, func_greedy, func_smart, func_hill_climbing, func_simulated_annealing, func_genetic, func_read_file):
         self.R = R
         self.C = C
         self.F = F
@@ -14,12 +16,15 @@ class VisualizadorHashcode:
         self.rides = rides
         self.B = B
         
-        # Guardar as funções passadas pelo main.py
         self.func_greedy = func_greedy
         self.func_smart = func_smart
         self.func_hill_climbing = func_hill_climbing
         self.func_simulated_annealing = func_simulated_annealing
-        self.func_genetic = func_genetic # <--- Corrigido o erro de sintaxe aqui
+        self.func_genetic = func_genetic 
+        self.func_read_file = func_read_file # <--- Nova função recebida
+
+        # Variável para rastrear qual é o algoritmo ativo (1 a 5). Começa no 2 (Smart Greedy)
+        self.algoritmo_ativo = 2 
 
         self.max_canvas_width = 1180
         self.max_canvas_height = 720
@@ -66,6 +71,7 @@ class VisualizadorHashcode:
 
     def mudar_algoritmo(self, tipo):
         self.em_execucao = False
+        self.algoritmo_ativo = tipo
         
         # Recalcular as rotas com o algoritmo escolhido
         if tipo == 1:
@@ -81,12 +87,30 @@ class VisualizadorHashcode:
             self.cars_schedule, self.pontuacao_final_calculada = self.func_simulated_annealing(self.F, self.B, self.rides)
             self.lbl_algo_ativo.config(text="Ativo: Simulated Annealing")
         elif tipo == 5:
-            # Adicionada a chamada para o Algoritmo Genético
             self.cars_schedule, self.pontuacao_final_calculada = self.func_genetic(self.F, self.B, self.rides)
             self.lbl_algo_ativo.config(text="Ativo: Algoritmo Genético")
             
-        # Repor a simulação do zero
         self.restart()
+
+    def carregar_ficheiro(self, event=None):
+        """Carrega um novo ficheiro de input e repõe o visualizador"""
+        ficheiro_selecionado = self.combo_ficheiros.get()
+        if not ficheiro_selecionado: return
+        
+        caminho_completo = os.path.join("input", ficheiro_selecionado)
+        
+        # Parar simulação atual
+        self.em_execucao = False
+        
+        # Ler novos dados usando a função do main.py
+        self.R, self.C, self.F, N, self.B, self.T_MAX, self.rides = self.func_read_file(caminho_completo)
+        
+        # Atualizar Labels
+        self.lbl_rides.config(text=f"Viagens: {len(self.rides)}")
+        self.tam_celula = self._calcular_tamanho_celula()
+        
+        # Recalcular usando o algoritmo que estava selecionado
+        self.mudar_algoritmo(self.algoritmo_ativo)
 
     def setup_ui(self):
         style = ttk.Style()
@@ -120,9 +144,29 @@ class VisualizadorHashcode:
         ttk.Label(title_block, text="Simulador Hash Code", style="Title.TLabel").pack(anchor="w")
         ttk.Label(title_block, text="Local search and greedy solvers on the ride scheduling problem", style="Meta.TLabel").pack(anchor="w", pady=(2, 0))
 
-        ttk.Label(header, text="Algoritmo ativo", style="Meta.TLabel").grid(row=0, column=1, sticky="e", padx=(16, 6))
-        self.lbl_algo_ativo = ttk.Label(header, text="Smart Greedy", style="Title.TLabel")
-        self.lbl_algo_ativo.grid(row=0, column=2, sticky="e")
+        # --- NOVO SELECTOR DE FICHEIROS NO CABEÇALHO ---
+        file_frame = ttk.Frame(header, style="Header.TFrame")
+        file_frame.grid(row=0, column=1, sticky="e", padx=(16, 16))
+        ttk.Label(file_frame, text="Dataset:", style="Meta.TLabel").pack(side=tk.LEFT, padx=5)
+        
+        # Procurar ficheiros na pasta input/
+        if os.path.exists("input"):
+            ficheiros_input = [os.path.basename(f) for f in glob.glob("input/*.txt") + glob.glob("input/*.in")]
+        else:
+            ficheiros_input = ["Nenhuma pasta 'input' encontrada"]
+
+        self.combo_ficheiros = ttk.Combobox(file_frame, values=ficheiros_input, state="readonly", width=25)
+        if ficheiros_input:
+            self.combo_ficheiros.set(ficheiros_input[0]) # Selecionar o primeiro por defeito
+        self.combo_ficheiros.pack(side=tk.LEFT)
+        self.combo_ficheiros.bind("<<ComboboxSelected>>", self.carregar_ficheiro)
+
+
+        info_frame = ttk.Frame(header, style="Header.TFrame")
+        info_frame.grid(row=0, column=2, sticky="e")
+        ttk.Label(info_frame, text="Algoritmo ativo:", style="Meta.TLabel").pack(side=tk.LEFT, padx=5)
+        self.lbl_algo_ativo = ttk.Label(info_frame, text="Smart Greedy", style="Title.TLabel")
+        self.lbl_algo_ativo.pack(side=tk.LEFT)
 
         controls = ttk.Frame(container, style="Card.TFrame", padding=12)
         controls.grid(row=1, column=0, sticky="ew", pady=(12, 12))
@@ -136,7 +180,6 @@ class VisualizadorHashcode:
         ttk.Button(buttons, text="Smart Greedy", style="Dark.TButton", command=lambda: self.mudar_algoritmo(2)).pack(side=tk.LEFT, padx=5)
         ttk.Button(buttons, text="Hill Climbing", style="Dark.TButton", command=lambda: self.mudar_algoritmo(3)).pack(side=tk.LEFT, padx=5)
         ttk.Button(buttons, text="Simulated Annealing", style="Dark.TButton", command=lambda: self.mudar_algoritmo(4)).pack(side=tk.LEFT, padx=5)
-        # --- NOVO BOTÃO PARA O GENÉTICO ---
         ttk.Button(buttons, text="Genético", style="Dark.TButton", command=lambda: self.mudar_algoritmo(5)).pack(side=tk.LEFT, padx=5)
 
         stats = ttk.Frame(controls, style="Card.TFrame")
