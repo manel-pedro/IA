@@ -310,8 +310,9 @@ def solve_simulated_annealing(F, B, rides):
 
 def crossover(parent1, parent2, F):
     child = [[] for _ in range(F)]
-    used_rides = set()
+    used_rides = set() # evita duplicados, senão um passageiro era apanhado duas vezes
     
+    # metade das agendas vem de um pai, metade do outro
     for i in range(F // 2):
         for ride in parent1[i]:
             if ride not in used_rides:
@@ -329,9 +330,11 @@ def crossover(parent1, parent2, F):
 def solve_genetic_algorithm(F, B, rides, pop_size=100, generations=250, mutation_rate=0.4):
     population = []
     
+    # damos seed à população com uma base do randomized greedy
     base_sol = cars_to_solution(solve_randomized_greedy(F, B, rides)[0])
     population.append(base_sol)
     
+    # gera diversidade inicial à volta da solução base
     for _ in range(pop_size - 1):
         mutated = random_neighbor(base_sol)
         for _ in range(random.randint(1, 5)):
@@ -341,10 +344,12 @@ def solve_genetic_algorithm(F, B, rides, pop_size=100, generations=250, mutation
     best_overall_cars = None
     best_overall_score = float('-inf')
     
+    # percorre as diferentes gerações
     for gen in range(generations):
         fitness_scores = []
         valid_population = []
         
+        # avalia cada plano da população da geração atual
         for sol in population:
             cars, score = solution_to_cars(sol, rides, B)
             if cars is not None:
@@ -360,15 +365,18 @@ def solve_genetic_algorithm(F, B, rides, pop_size=100, generations=250, mutation
         paired = list(zip(valid_population, fitness_scores))
         paired.sort(key=lambda x: x[1], reverse=True)
         
+        # sobrevivem os melhores 20% para a próxima ronda 
         elite_count = max(2, int(pop_size * 0.2))
         new_population = [p[0] for p in paired[:elite_count]]
         mating_pool = [p[0] for p in paired[:max(2, len(paired)//2)]]
         
+        # introduzimos o resto da população com os filhos cruzados
         while len(new_population) < pop_size:
             parent1 = random.choice(mating_pool)
             parent2 = random.choice(mating_pool)
             child = crossover(parent1, parent2, F)
             
+            # muda algo ao calhas e introduz imprevisibilidade
             if random.random() < mutation_rate:
                 child = random_neighbor(child)
                 
