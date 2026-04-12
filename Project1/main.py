@@ -469,6 +469,7 @@ def main():
                 R, C, F, T_MAX, B, rides,
                 solve_greedy,
                 solve_smart_greedy,
+                solve_randomized_greedy,
                 solve_hill_climbing,
                 solve_simulated_annealing,
                 solve_genetic_algorithm,

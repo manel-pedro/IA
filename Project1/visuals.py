@@ -7,7 +7,7 @@ def distance(a, b, x, y):
     return abs(a - x) + abs(b - y)
 
 class VisualizadorHashcode:
-    def __init__(self, R, C, F, T_MAX, B, rides, func_greedy, func_smart, func_hill_climbing, func_simulated_annealing, func_genetic, func_read_file):
+    def __init__(self, R, C, F, T_MAX, B, rides, func_greedy, func_smart, func_randomized, func_hill_climbing, func_simulated_annealing, func_genetic, func_read_file):
         self.R = R
         self.C = C
         self.F = F
@@ -17,6 +17,7 @@ class VisualizadorHashcode:
         
         self.func_greedy = func_greedy
         self.func_smart = func_smart
+        self.func_randomized = func_randomized
         self.func_hill_climbing = func_hill_climbing
         self.func_simulated_annealing = func_simulated_annealing
         self.func_genetic = func_genetic 
@@ -24,35 +25,83 @@ class VisualizadorHashcode:
 
         self.algoritmo_ativo = 2 
 
-        self.max_canvas_width = 1180
-        self.max_canvas_height = 720
+        # Valores base de fallback, o Canvas vai adaptar-se ao tamanho real
+        self.current_canvas_width = 1180
+        self.current_canvas_height = 680
         
+        # Paleta de Cores Moderna (Dark Theme)
+        self.colors = {
+            "bg_main": "#0f172a",        # Fundo principal (Slate 900)
+            "bg_card": "#1e293b",        # Fundo dos painéis (Slate 800)
+            "bg_canvas": "#0B1120",      # Fundo do mapa (Ainda mais escuro)
+            "text_primary": "#f8fafc",   # Texto principal (Slate 50)
+            "text_secondary": "#94a3b8", # Texto secundário (Slate 400)
+            "accent": "#3b82f6",         # Cor de destaque (Azul)
+            "grid_lines": "#334155",     # Linhas da grelha
+            "car_empty": "#3b82f6",      # Azul brilhante
+            "car_wait": "#f59e0b",       # Amarelo/Laranja
+            "car_full": "#10b981",       # Verde esmeralda
+            "car_done": "#475569",       # Cinzento neutro
+            "ride_start": "#10b981",     # Verde para início da viagem
+            "ride_end": "#ef4444"        # Vermelho para fim da viagem
+        }
+
         self.cars_schedule, self.pontuacao_final_calculada = self.func_smart(self.F, self.B, self.rides)
         
         self.passo_atual = 0
         self.em_execucao = False
         self.score_atual = 0
         
-        self.tam_celula = self._calcular_tamanho_celula()
+        self.tam_celula = 20 # Calculado dinamicamente no redraw
         
         self.carros_sim = []
         self.reset_carros()
 
         self.root = tk.Tk()
-        self.root.title("Simulador Hash Code")
+        self.root.title("Simulador Hash Code - Otimização de Frotas")
         self.root.geometry("1280x900")
-        self.root.minsize(1000, 720)
-        self.root.configure(bg="#0f172a")
+        self.root.minsize(1100, 750)
+        self.root.configure(bg=self.colors["bg_main"])
         
         self.setup_ui()
+        
+        # Força uma atualização inicial para o Canvas calcular a sua largura real
+        self.root.update_idletasks() 
         self.desenhar()
+
+    def _obter_ficheiros_validos(self):
+        """Lê os cabeçalhos de todos os ficheiros e retorna apenas os <= 30x30"""
+        ficheiros_validos = []
+        if os.path.exists("input"):
+            todos_ficheiros = glob.glob("input/*.txt") + glob.glob("input/*.in")
+            todos_ficheiros.sort()
+            
+            for caminho in todos_ficheiros:
+                try:
+                    with open(caminho, 'r', encoding='utf-8') as f:
+                        primeira_linha = f.readline().strip()
+                        if primeira_linha:
+                            partes = primeira_linha.split()
+                            if len(partes) >= 2:
+                                r_file = int(partes[0])
+                                c_file = int(partes[1])
+                                if r_file <= 30 and c_file <= 30:
+                                    ficheiros_validos.append(os.path.basename(caminho))
+                except Exception:
+                    pass
+                    
+        if not ficheiros_validos:
+            ficheiros_validos = ["Nenhum dataset <= 30x30 encontrado"]
+            
+        return ficheiros_validos
 
     def _calcular_tamanho_celula(self):
         if self.R <= 0 or self.C <= 0:
             return 20
-        fit_width = max(1, self.max_canvas_width // self.C)
-        fit_height = max(1, self.max_canvas_height // self.R)
-        return max(1, min(24, fit_width, fit_height))
+        # Subtrai-se 60 para dar uma margem segura nas bordas
+        fit_width = max(1, (self.current_canvas_width - 60) // self.C)
+        fit_height = max(1, (self.current_canvas_height - 60) // self.R)
+        return max(2, min(35, fit_width, fit_height))
 
     def reset_carros(self):
         self.carros_sim = []
@@ -69,33 +118,59 @@ class VisualizadorHashcode:
         self.em_execucao = False
         self.algoritmo_ativo = tipo
         
-        if tipo == 1:
-            self.cars_schedule, self.pontuacao_final_calculada = self.func_greedy(self.F, self.B, self.rides)
-            self.lbl_algo_ativo.config(text="Ativo: Greedy Simples")
-        elif tipo == 2:
-            self.cars_schedule, self.pontuacao_final_calculada = self.func_smart(self.F, self.B, self.rides)
-            self.lbl_algo_ativo.config(text="Ativo: Smart Greedy")
-        elif tipo == 3:
-            self.cars_schedule, self.pontuacao_final_calculada = self.func_hill_climbing(self.F, self.B, self.rides)
-            self.lbl_algo_ativo.config(text="Ativo: Hill Climbing")
-        elif tipo == 4:
-            self.cars_schedule, self.pontuacao_final_calculada = self.func_simulated_annealing(self.F, self.B, self.rides)
-            self.lbl_algo_ativo.config(text="Ativo: Simulated Annealing")
-        elif tipo == 5:
-            self.cars_schedule, self.pontuacao_final_calculada = self.func_genetic(self.F, self.B, self.rides)
-            self.lbl_algo_ativo.config(text="Ativo: Algoritmo Genético")
+        nomes = {
+            1: "Greedy Simples",
+            2: "Smart Greedy",
+            3: "Randomized Greedy",
+            4: "Hill Climbing",
+            5: "Simulated Annealing",
+            6: "Algoritmo Genético"
+        }
+        
+        funcs = {
+            1: self.func_greedy,
+            2: self.func_smart,
+            3: self.func_randomized,
+            4: self.func_hill_climbing,
+            5: self.func_simulated_annealing,
+            6: self.func_genetic
+        }
+        
+        self.lbl_algo_ativo.config(text=f"A calcular {nomes[tipo]}...")
+        self.root.update()
+        
+        self.cars_schedule, self.pontuacao_final_calculada = funcs[tipo](self.F, self.B, self.rides)
+        self.lbl_algo_ativo.config(text=nomes[tipo])
             
         self.restart()
 
     def carregar_ficheiro(self, event=None):
         ficheiro_selecionado = self.combo_ficheiros.get()
-        if not ficheiro_selecionado: return
+        if not ficheiro_selecionado or ficheiro_selecionado == "Nenhum dataset <= 30x30 encontrado": return
+        
+        self.lbl_algo_ativo.config(text="A carregar ficheiro...")
+        self.root.update()
+        
         caminho_completo = os.path.join("input", ficheiro_selecionado)
         self.em_execucao = False
         self.R, self.C, self.F, N, self.B, self.T_MAX, self.rides = self.func_read_file(caminho_completo)
-        self.lbl_rides.config(text=f"Viagens: {len(self.rides)}")
-        self.tam_celula = self._calcular_tamanho_celula()
+        
+        self.lbl_rides.config(text=f"Viagens Totais: {len(self.rides)}")
+        self.desenhar() # Vai recalcular o tamanho da célula automaticamente
         self.mudar_algoritmo(self.algoritmo_ativo)
+
+    def on_canvas_resize(self, event):
+        """Dispara sempre que a janela for redimensionada para recentrar o mapa"""
+        if event.widget == self.canvas:
+            new_width = event.width
+            new_height = event.height
+            # Evita redraws contínuos e desnecessários com pequenas flutuações
+            if abs(new_width - self.current_canvas_width) > 10 or abs(new_height - self.current_canvas_height) > 10:
+                self.current_canvas_width = new_width
+                self.current_canvas_height = new_height
+                # Se não estiver a executar, redesenha o frame para centrar
+                if not self.em_execucao:
+                    self.desenhar()
 
     def setup_ui(self):
         style = ttk.Style()
@@ -104,108 +179,161 @@ class VisualizadorHashcode:
         except tk.TclError:
             pass
 
-        style.configure("App.TFrame", background="#0f172a")
-        style.configure("Header.TFrame", background="#111827")
-        style.configure("Card.TFrame", background="#111827")
-        style.configure("Title.TLabel", background="#111827", foreground="white", font=("Helvetica", 16, "bold"))
-        style.configure("Meta.TLabel", background="#111827", foreground="#cbd5e1", font=("Helvetica", 10))
-        style.configure("Dark.TLabel", background="#111827", foreground="white", font=("Helvetica", 10))
-        style.configure("Dark.TButton", padding=(10, 6))
+        font_title = ("Segoe UI", 16, "bold")
+        font_main = ("Segoe UI", 11)
+        font_small = ("Segoe UI", 9)
 
-        self.root.rowconfigure(0, weight=1)
-        self.root.columnconfigure(0, weight=1)
+        style.configure("App.TFrame", background=self.colors["bg_main"])
+        style.configure("Card.TFrame", background=self.colors["bg_card"])
+        
+        style.configure("Title.TLabel", background=self.colors["bg_card"], foreground=self.colors["text_primary"], font=font_title)
+        style.configure("Subtitle.TLabel", background=self.colors["bg_card"], foreground=self.colors["text_secondary"], font=font_small)
+        style.configure("Data.TLabel", background=self.colors["bg_card"], foreground=self.colors["accent"], font=("Segoe UI", 12, "bold"))
+        style.configure("Standard.TLabel", background=self.colors["bg_card"], foreground=self.colors["text_primary"], font=font_main)
 
-        container = ttk.Frame(self.root, style="App.TFrame", padding=16)
-        container.grid(row=0, column=0, sticky="nsew")
+        style.configure("Modern.TButton", 
+                        font=("Segoe UI", 10), 
+                        padding=6, 
+                        background="#334155", 
+                        foreground="white",
+                        borderwidth=0)
+        style.map("Modern.TButton",
+                  background=[('active', self.colors["accent"])],
+                  foreground=[('active', 'white')])
+
+        style.configure("Action.TButton", 
+                        font=("Segoe UI", 10, "bold"), 
+                        padding=8, 
+                        background=self.colors["accent"], 
+                        foreground="white",
+                        borderwidth=0)
+        style.map("Action.TButton",
+                  background=[('active', '#2563eb')])
+
+        container = ttk.Frame(self.root, style="App.TFrame")
+        container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         container.columnconfigure(0, weight=1)
         container.rowconfigure(2, weight=1)
 
-        header = ttk.Frame(container, style="Header.TFrame", padding=(16, 14))
-        header.grid(row=0, column=0, sticky="ew")
-        header.columnconfigure(1, weight=1)
+        # --- CABEÇALHO ---
+        header = ttk.Frame(container, style="Card.TFrame")
+        header.grid(row=0, column=0, sticky="ew", pady=(0, 15))
+        header.columnconfigure(2, weight=1)
 
-        title_block = ttk.Frame(header, style="Header.TFrame")
-        title_block.grid(row=0, column=0, sticky="w")
-        ttk.Label(title_block, text="Simulador Hash Code", style="Title.TLabel").pack(anchor="w")
-        ttk.Label(title_block, text="Local search and greedy solvers on the ride scheduling problem", style="Meta.TLabel").pack(anchor="w", pady=(2, 0))
+        title_box = tk.Frame(header, bg=self.colors["bg_card"], padx=15, pady=10)
+        title_box.grid(row=0, column=0, sticky="w")
+        ttk.Label(title_box, text="Simulador Hash Code", style="Title.TLabel").pack(anchor="w")
+        ttk.Label(title_box, text="Ride Scheduling AI Visualizer", style="Subtitle.TLabel").pack(anchor="w")
 
-        file_frame = ttk.Frame(header, style="Header.TFrame")
-        file_frame.grid(row=0, column=1, sticky="e", padx=(16, 16))
-        ttk.Label(file_frame, text="Dataset:", style="Meta.TLabel").pack(side=tk.LEFT, padx=5)
+        file_box = tk.Frame(header, bg=self.colors["bg_card"], padx=15, pady=10)
+        file_box.grid(row=0, column=1, sticky="w")
+        ttk.Label(file_box, text="Dataset Visual (≤ 30x30):", style="Subtitle.TLabel").pack(anchor="w")
         
-        if os.path.exists("input"):
-            ficheiros_input = [os.path.basename(f) for f in glob.glob("input/*.txt") + glob.glob("input/*.in")]
-        else:
-            ficheiros_input = ["Nenhuma pasta 'input' encontrada"]
+        ficheiros_input = self._obter_ficheiros_validos()
 
-        self.combo_ficheiros = ttk.Combobox(file_frame, values=ficheiros_input, state="readonly", width=25)
+        self.combo_ficheiros = ttk.Combobox(file_box, values=ficheiros_input, state="readonly", width=30, font=font_main)
         if ficheiros_input:
-            self.combo_ficheiros.set(ficheiros_input[0])
-        self.combo_ficheiros.pack(side=tk.LEFT)
+            ficheiro_atual = "a_example.in" if not self.rides else "a_example.in" 
+            encontrado = False
+            for f in ficheiros_input:
+                if self.R <= 30 and self.C <= 30:
+                     self.combo_ficheiros.set(f)
+                     encontrado = True
+                     break
+            if not encontrado:
+                self.combo_ficheiros.set(ficheiros_input[0])
+                
+        self.combo_ficheiros.pack(side=tk.LEFT, pady=(4, 0))
         self.combo_ficheiros.bind("<<ComboboxSelected>>", self.carregar_ficheiro)
 
-        info_frame = ttk.Frame(header, style="Header.TFrame")
-        info_frame.grid(row=0, column=2, sticky="e")
-        ttk.Label(info_frame, text="Algoritmo ativo:", style="Meta.TLabel").pack(side=tk.LEFT, padx=5)
-        self.lbl_algo_ativo = ttk.Label(info_frame, text="Smart Greedy", style="Title.TLabel")
-        self.lbl_algo_ativo.pack(side=tk.LEFT)
+        algo_box = tk.Frame(header, bg=self.colors["bg_card"], padx=15, pady=10)
+        algo_box.grid(row=0, column=2, sticky="e")
+        ttk.Label(algo_box, text="Algoritmo Selecionado", style="Subtitle.TLabel").pack(anchor="e")
+        self.lbl_algo_ativo = ttk.Label(algo_box, text="Smart Greedy", style="Data.TLabel")
+        self.lbl_algo_ativo.pack(anchor="e")
 
-        controls = ttk.Frame(container, style="Card.TFrame", padding=12)
-        controls.grid(row=1, column=0, sticky="ew", pady=(12, 12))
-        controls.columnconfigure(0, weight=1)
+        # --- PAINEL DE CONTROLO ---
+        control_panel = ttk.Frame(container, style="Card.TFrame", padding=15)
+        control_panel.grid(row=1, column=0, sticky="ew", pady=(0, 15))
+        control_panel.columnconfigure(0, weight=1)
 
-        buttons = ttk.Frame(controls, style="Card.TFrame")
-        buttons.grid(row=0, column=0, sticky="w")
+        row1 = tk.Frame(control_panel, bg=self.colors["bg_card"])
+        row1.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        row1.columnconfigure(1, weight=1)
 
-        ttk.Label(buttons, text="Escolher algoritmo", style="Dark.TLabel").pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(buttons, text="Greedy Simples", style="Dark.TButton", command=lambda: self.mudar_algoritmo(1)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(buttons, text="Smart Greedy", style="Dark.TButton", command=lambda: self.mudar_algoritmo(2)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(buttons, text="Hill Climbing", style="Dark.TButton", command=lambda: self.mudar_algoritmo(3)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(buttons, text="Simulated Annealing", style="Dark.TButton", command=lambda: self.mudar_algoritmo(4)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(buttons, text="Genético", style="Dark.TButton", command=lambda: self.mudar_algoritmo(5)).pack(side=tk.LEFT, padx=5)
+        algo_btns = tk.Frame(row1, bg=self.colors["bg_card"])
+        algo_btns.grid(row=0, column=0, sticky="w")
+        
+        ttk.Button(algo_btns, text="Greedy Simples", style="Modern.TButton", command=lambda: self.mudar_algoritmo(1)).pack(side=tk.LEFT, padx=3)
+        ttk.Button(algo_btns, text="Smart Greedy", style="Modern.TButton", command=lambda: self.mudar_algoritmo(2)).pack(side=tk.LEFT, padx=3)
+        ttk.Button(algo_btns, text="Randomized Greedy", style="Modern.TButton", command=lambda: self.mudar_algoritmo(3)).pack(side=tk.LEFT, padx=3)
+        ttk.Button(algo_btns, text="Hill Climbing", style="Modern.TButton", command=lambda: self.mudar_algoritmo(4)).pack(side=tk.LEFT, padx=3)
+        ttk.Button(algo_btns, text="Simulated Annealing", style="Modern.TButton", command=lambda: self.mudar_algoritmo(5)).pack(side=tk.LEFT, padx=3)
+        ttk.Button(algo_btns, text="Genético", style="Modern.TButton", command=lambda: self.mudar_algoritmo(6)).pack(side=tk.LEFT, padx=3)
 
-        stats = ttk.Frame(controls, style="Card.TFrame")
-        stats.grid(row=1, column=0, sticky="ew", pady=(12, 0))
-        stats.columnconfigure(0, weight=1)
-        stats.columnconfigure(1, weight=1)
-        stats.columnconfigure(2, weight=1)
+        stats_box = tk.Frame(row1, bg=self.colors["bg_card"])
+        stats_box.grid(row=0, column=1, sticky="e")
+        
+        self.lbl_passo = ttk.Label(stats_box, text="Passo: 0", style="Standard.TLabel")
+        self.lbl_passo.pack(side=tk.LEFT, padx=15)
+        
+        self.lbl_rides = ttk.Label(stats_box, text=f"Viagens: {len(self.rides)}", style="Standard.TLabel")
+        self.lbl_rides.pack(side=tk.LEFT, padx=15)
 
-        self.lbl_passo = ttk.Label(stats, text="Passo: 0", style="Dark.TLabel")
-        self.lbl_passo.grid(row=0, column=0, sticky="w")
+        self.lbl_score = ttk.Label(stats_box, text=f"Score Atual: 0 | Final: {self.pontuacao_final_calculada}", style="Data.TLabel", foreground=self.colors["car_full"])
+        self.lbl_score.pack(side=tk.LEFT, padx=15)
 
-        self.lbl_score = ttk.Label(stats, text=f"Score: 0 | Pontuação Final: {self.pontuacao_final_calculada}", style="Dark.TLabel")
-        self.lbl_score.grid(row=0, column=1, sticky="w")
+        ttk.Separator(control_panel, orient='horizontal').grid(row=1, column=0, sticky="ew", pady=10)
 
-        self.lbl_rides = ttk.Label(stats, text=f"Viagens: {len(self.rides)}", style="Dark.TLabel")
-        self.lbl_rides.grid(row=0, column=2, sticky="w")
+        sim_btns = tk.Frame(control_panel, bg=self.colors["bg_card"])
+        sim_btns.grid(row=2, column=0) 
+        
+        ttk.Button(sim_btns, text="▶ Play", style="Action.TButton", width=12, command=self.play).pack(side=tk.LEFT, padx=5)
+        ttk.Button(sim_btns, text="⏸ Pause", style="Modern.TButton", width=12, command=self.pause).pack(side=tk.LEFT, padx=5)
+        ttk.Button(sim_btns, text="⏭ +1 Passo", style="Modern.TButton", width=12, command=self.proximo_passo).pack(side=tk.LEFT, padx=5)
+        ttk.Button(sim_btns, text="⏩ Saltar p/ Fim", style="Modern.TButton", width=15, command=self.saltar_para_fim).pack(side=tk.LEFT, padx=5)
+        ttk.Button(sim_btns, text="↺ Reset", style="Modern.TButton", width=12, command=self.restart).pack(side=tk.LEFT, padx=5)
 
-        actions = ttk.Frame(controls, style="Card.TFrame")
-        actions.grid(row=2, column=0, sticky="w", pady=(12, 0))
-        ttk.Button(actions, text="Play", command=self.play).pack(side=tk.LEFT, padx=(0, 6))
-        ttk.Button(actions, text="Pause", command=self.pause).pack(side=tk.LEFT, padx=6)
-        ttk.Button(actions, text="+1 Passo", command=self.proximo_passo).pack(side=tk.LEFT, padx=6)
-        ttk.Button(actions, text="Saltar para o Fim ⏩", command=self.saltar_para_fim).pack(side=tk.LEFT, padx=6)
-        ttk.Button(actions, text="Restart", command=self.restart).pack(side=tk.LEFT, padx=6)
-
-        canvas_shell = ttk.Frame(container, style="App.TFrame")
-        canvas_shell.grid(row=2, column=0, sticky="nsew")
-        canvas_shell.rowconfigure(0, weight=1)
-        canvas_shell.columnconfigure(0, weight=1)
+        # --- ÁREA DO MAPA (CANVAS) ---
+        canvas_frame = tk.Frame(container, bg=self.colors["bg_card"], bd=1, relief=tk.FLAT)
+        canvas_frame.grid(row=2, column=0, sticky="nsew")
+        canvas_frame.rowconfigure(0, weight=1)
+        canvas_frame.columnconfigure(0, weight=1)
 
         self.canvas = tk.Canvas(
-            canvas_shell,
-            width=self.max_canvas_width,
-            height=self.max_canvas_height,
-            bg="white",
+            canvas_frame,
+            width=self.current_canvas_width,
+            height=self.current_canvas_height,
+            bg=self.colors["bg_canvas"],
             highlightthickness=0,
         )
-        x_scroll = ttk.Scrollbar(canvas_shell, orient="horizontal", command=self.canvas.xview)
-        y_scroll = ttk.Scrollbar(canvas_shell, orient="vertical", command=self.canvas.yview)
+        
+        self.canvas.bind("<Configure>", self.on_canvas_resize)
+        
+        x_scroll = ttk.Scrollbar(canvas_frame, orient="horizontal", command=self.canvas.xview)
+        y_scroll = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(xscrollcommand=x_scroll.set, yscrollcommand=y_scroll.set)
 
         self.canvas.grid(row=0, column=0, sticky="nsew")
         y_scroll.grid(row=0, column=1, sticky="ns")
         x_scroll.grid(row=1, column=0, sticky="ew")
+
+        # --- LEGENDA VISUAL ---
+        legenda = tk.Frame(container, bg=self.colors["bg_main"], pady=5)
+        legenda.grid(row=3, column=0, sticky="w")
+        
+        # Legenda dos Carros (Quadrados)
+        ttk.Label(legenda, text="■ Livre  ", foreground=self.colors["car_empty"], font=font_small, background=self.colors["bg_main"]).pack(side=tk.LEFT)
+        ttk.Label(legenda, text="■ Em Espera  ", foreground=self.colors["car_wait"], font=font_small, background=self.colors["bg_main"]).pack(side=tk.LEFT)
+        ttk.Label(legenda, text="■ Com Passageiro  ", foreground=self.colors["car_full"], font=font_small, background=self.colors["bg_main"]).pack(side=tk.LEFT)
+        ttk.Label(legenda, text="■ Concluído", foreground=self.colors["car_done"], font=font_small, background=self.colors["bg_main"]).pack(side=tk.LEFT)
+        
+        # Separador
+        ttk.Label(legenda, text="   |   ", foreground=self.colors["text_secondary"], font=font_small, background=self.colors["bg_main"]).pack(side=tk.LEFT)
+        
+        # Legenda das Viagens (Círculos)
+        ttk.Label(legenda, text="● Partida (Viagem)  ", foreground=self.colors["ride_start"], font=font_small, background=self.colors["bg_main"]).pack(side=tk.LEFT)
+        ttk.Label(legenda, text="● Chegada (Viagem)", foreground=self.colors["ride_end"], font=font_small, background=self.colors["bg_main"]).pack(side=tk.LEFT)
 
     def mover_para(self, r_atual, c_atual, r_dest, c_dest):
         if r_atual < r_dest: r_atual += 1
@@ -215,7 +343,6 @@ class VisualizadorHashcode:
         return r_atual, c_atual
 
     def logica_carros(self):
-        """Avança a matemática da simulação sem desenhar (para ser mais rápido)"""
         for carro in self.carros_sim:
             if carro["estado"] == 'CONCLUIDO': continue
             
@@ -262,59 +389,86 @@ class VisualizadorHashcode:
         self.desenhar()
         
         if self.em_execucao:
-            self.root.after(300, self.proximo_passo)
+            delay = 10 if self.T_MAX > 5000 else 100
+            self.root.after(delay, self.proximo_passo)
 
     def saltar_para_fim(self):
-        """Corre a simulação até ao fim num milissegundo e mostra resultados"""
         self.em_execucao = False
-        
         while self.passo_atual < self.T_MAX:
             self.logica_carros()
             self.passo_atual += 1
-            
         self.desenhar()
 
         messagebox.showinfo(
-            "Resultados Finais", 
-            f"A simulação avançou instantaneamente para o passo {self.T_MAX}.\n\n"
-            f"Score Final Atingido: {self.score_atual}"
+            "Simulação Concluída", 
+            f"Tempo limite atingido (Passo {self.T_MAX}).\n\n"
+            f"Score Obtido: {self.score_atual}"
         )
 
     def desenhar(self):
+        self.tam_celula = self._calcular_tamanho_celula()
+        
         self.canvas.delete("all")
         self.lbl_passo.config(text=f"Passo: {self.passo_atual} / {self.T_MAX}")
-        self.lbl_score.config(text=f"Score: {self.score_atual} | Pontuação Final: {self.pontuacao_final_calculada}")
+        self.lbl_score.config(text=f"Score Atual: {self.score_atual} | Final: {self.pontuacao_final_calculada}")
         
-        if max(self.R, self.C) < 100:
-            for i in range(self.R + 1):
-                self.canvas.create_line(0, i*self.tam_celula, self.C*self.tam_celula, i*self.tam_celula, fill="#1e293b")
-            for j in range(self.C + 1):
-                self.canvas.create_line(j*self.tam_celula, 0, j*self.tam_celula, self.R*self.tam_celula, fill="#1e293b")
+        grid_w = self.C * self.tam_celula
+        grid_h = self.R * self.tam_celula
+        
+        offset_x = max(0, (self.current_canvas_width - grid_w) // 2)
+        offset_y = max(0, (self.current_canvas_height - grid_h) // 2)
+
+        for i in range(self.R + 1):
+            y = offset_y + i * self.tam_celula
+            self.canvas.create_line(offset_x, y, offset_x + grid_w, y, fill=self.colors["grid_lines"], width=1)
+        for j in range(self.C + 1):
+            x = offset_x + j * self.tam_celula
+            self.canvas.create_line(x, offset_y, x, offset_y + grid_h, fill=self.colors["grid_lines"], width=1)
                 
         for carro in self.carros_sim:
             if carro["estado"] != 'CONCLUIDO':
                 id_v = carro["viagens_atribuidas"][carro["idx_viagem_atual"]]
                 a, b, x, y, _, _ = self.rides[id_v]
-                marker = max(4, min(10, self.tam_celula // 2))
-                self.canvas.create_oval(b*self.tam_celula+4, a*self.tam_celula+4, b*self.tam_celula+4+marker, a*self.tam_celula+4+marker, fill="#22c55e", outline="")
-                self.canvas.create_oval(y*self.tam_celula+4, x*self.tam_celula+4, y*self.tam_celula+4+marker, x*self.tam_celula+4+marker, fill="#ef4444", outline="")
+                marker_size = max(4, min(10, self.tam_celula // 2.5))
+                
+                start_x = offset_x + b * self.tam_celula + (self.tam_celula // 2)
+                start_y = offset_y + a * self.tam_celula + (self.tam_celula // 2)
+                
+                end_x = offset_x + y * self.tam_celula + (self.tam_celula // 2)
+                end_y = offset_y + x * self.tam_celula + (self.tam_celula // 2)
+                
+                self.canvas.create_oval(
+                    start_x - marker_size, start_y - marker_size, 
+                    start_x + marker_size, start_y + marker_size, 
+                    fill=self.colors["ride_start"], outline=""
+                )
+                self.canvas.create_oval(
+                    end_x - marker_size, end_y - marker_size, 
+                    end_x + marker_size, end_y + marker_size, 
+                    fill=self.colors["ride_end"], outline=""
+                )
                 
         for carro in self.carros_sim:
-            cy = carro["r"] * self.tam_celula + (self.tam_celula//2)
-            cx = carro["c"] * self.tam_celula + (self.tam_celula//2)
-            if carro["estado"] == 'A_CAMINHO_PARTIDA':
-                cor = "#3b82f6" 
-            elif carro["estado"] == 'ESPERA':
-                cor = "#eab308"  
-            elif carro["estado"] == 'COM_PASSAGEIRO':
-                cor = "#22c55e"  
-            else:
-                cor = "#6b7280"  
-            half = max(4, min(12, self.tam_celula // 2))
-            self.canvas.create_rectangle(cx-half, cy-half, cx+half, cy+half, fill=cor, outline="")
-            self.canvas.create_text(cx, cy, text=str(carro["id"]), fill="white", font=("Helvetica", 8, "bold"))
+            cx = offset_x + carro["c"] * self.tam_celula + (self.tam_celula//2)
+            cy = offset_y + carro["r"] * self.tam_celula + (self.tam_celula//2)
+            
+            if carro["estado"] == 'A_CAMINHO_PARTIDA': cor = self.colors["car_empty"]
+            elif carro["estado"] == 'ESPERA': cor = self.colors["car_wait"]
+            elif carro["estado"] == 'COM_PASSAGEIRO': cor = self.colors["car_full"]
+            else: cor = self.colors["car_done"]
+                
+            car_size = max(6, min(14, self.tam_celula // 1.8))
+            
+            self.canvas.create_rectangle(
+                cx - car_size, cy - car_size, 
+                cx + car_size, cy + car_size, 
+                fill=cor, outline=self.colors["bg_canvas"], width=2, tags="carro"
+            )
+            
+            if self.tam_celula >= 20:
+                self.canvas.create_text(cx, cy, text=str(carro["id"]), fill="white", font=("Segoe UI", 8, "bold"))
 
-        self.canvas.configure(scrollregion=(0, 0, self.C * self.tam_celula, self.R * self.tam_celula))
+        self.canvas.configure(scrollregion=(0, 0, max(self.current_canvas_width, grid_w + 20), max(self.current_canvas_height, grid_h + 20)))
 
     def play(self):
         if not self.em_execucao:
