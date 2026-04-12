@@ -1,4 +1,4 @@
-# Otimização de Ride-Sharing (Google Hash Code)
+# Self-Driving Rides Optimization (Google Hash Code)
 
 Este projeto foi desenvolvido no âmbito da Unidade Curricular de Inteligência Artificial. O sistema resolve o problema de escalonamento de frotas de veículos elétricos numa grelha urbana, focando-se na maximização da pontuação total (distância percorrida + bónus de pontualidade) através de múltiplas abordagens algorítmicas.
 
@@ -22,13 +22,13 @@ O programa foi desenvolvido inteiramente em **Python 3**.
 ### Como Executar
 Navegue até à pasta raiz do projeto através do terminal e execute:
 ```bash
-python main.py
+python3 main.py
 ```
 
 
 ## Modos de Funcionamento
 
-Ao iniciar, o programa apresenta um menu interativo com três opções principais:
+Ao iniciar, o programa apresenta um menu interativo com duas opções principais:
 ### 1. Modo Terminal (Processamento Individual)
 
 Ideal para resolver datasets massivos de forma rápida e eficiente.
@@ -55,5 +55,5 @@ No final, gera uma ficheiro .csv detalhando o Score obtido e o Tempo de Execuç�
 Para o usar, é só ir até ao terminal e correr:
 
 ```bash
-python benchmark.py
+python3 benchmark.py
 ```
