@@ -227,7 +227,7 @@ class VisualizadorHashcode:
 
         file_box = tk.Frame(header, bg=self.colors["bg_card"], padx=15, pady=10)
         file_box.grid(row=0, column=1, sticky="w")
-        ttk.Label(file_box, text="Dataset Visual (≤ 30x30):", style="Subtitle.TLabel").pack(anchor="w")
+        ttk.Label(file_box, text="Dataset Visual (<= 30x30):", style="Subtitle.TLabel").pack(anchor="w")
         
         ficheiros_input = self._obter_ficheiros_validos()
 
@@ -288,11 +288,11 @@ class VisualizadorHashcode:
         sim_btns = tk.Frame(control_panel, bg=self.colors["bg_card"])
         sim_btns.grid(row=2, column=0) 
         
-        ttk.Button(sim_btns, text="▶ Play", style="Action.TButton", width=12, command=self.play).pack(side=tk.LEFT, padx=5)
-        ttk.Button(sim_btns, text="⏸ Pause", style="Modern.TButton", width=12, command=self.pause).pack(side=tk.LEFT, padx=5)
-        ttk.Button(sim_btns, text="⏭ +1 Passo", style="Modern.TButton", width=12, command=self.proximo_passo).pack(side=tk.LEFT, padx=5)
-        ttk.Button(sim_btns, text="⏩ Saltar p/ Fim", style="Modern.TButton", width=15, command=self.saltar_para_fim).pack(side=tk.LEFT, padx=5)
-        ttk.Button(sim_btns, text="↺ Reset", style="Modern.TButton", width=12, command=self.restart).pack(side=tk.LEFT, padx=5)
+        ttk.Button(sim_btns, text="Play", style="Action.TButton", width=12, command=self.play).pack(side=tk.LEFT, padx=5)
+        ttk.Button(sim_btns, text="Pause", style="Modern.TButton", width=12, command=self.pause).pack(side=tk.LEFT, padx=5)
+        ttk.Button(sim_btns, text="+1 Passo", style="Modern.TButton", width=12, command=self.proximo_passo).pack(side=tk.LEFT, padx=5)
+        ttk.Button(sim_btns, text="Saltar p/ Fim", style="Modern.TButton", width=15, command=self.saltar_para_fim).pack(side=tk.LEFT, padx=5)
+        ttk.Button(sim_btns, text="Reset", style="Modern.TButton", width=12, command=self.restart).pack(side=tk.LEFT, padx=5)
 
         # --- ÁREA DO MAPA (CANVAS) ---
         canvas_frame = tk.Frame(container, bg=self.colors["bg_card"], bd=1, relief=tk.FLAT)
