@@ -169,19 +169,15 @@ class VisualizadorHashcode:
         stats.columnconfigure(0, weight=1)
         stats.columnconfigure(1, weight=1)
         stats.columnconfigure(2, weight=1)
-        stats.columnconfigure(3, weight=1)
 
         self.lbl_passo = ttk.Label(stats, text="Passo: 0", style="Dark.TLabel")
         self.lbl_passo.grid(row=0, column=0, sticky="w")
 
-        self.lbl_score = ttk.Label(stats, text="Score: 0", style="Dark.TLabel")
+        self.lbl_score = ttk.Label(stats, text=f"Score: 0 | Pontuação Final: {self.pontuacao_final_calculada}", style="Dark.TLabel")
         self.lbl_score.grid(row=0, column=1, sticky="w")
 
         self.lbl_rides = ttk.Label(stats, text=f"Viagens: {len(self.rides)}", style="Dark.TLabel")
         self.lbl_rides.grid(row=0, column=2, sticky="w")
-
-        self.lbl_target = ttk.Label(stats, text=f"Alvo: {self.pontuacao_final_calculada}", style="Dark.TLabel")
-        self.lbl_target.grid(row=0, column=3, sticky="w")
 
         actions = ttk.Frame(controls, style="Card.TFrame")
         actions.grid(row=2, column=0, sticky="w", pady=(12, 0))
@@ -277,26 +273,17 @@ class VisualizadorHashcode:
             self.passo_atual += 1
             
         self.desenhar()
-        
-        # Calcular percentagem de sucesso face à predição
-        percentagem = ""
-        if self.pontuacao_final_calculada > 0:
-            acerto = (self.score_atual / self.pontuacao_final_calculada) * 100
-            percentagem = f"\n\nDesempenho Otimizado: {acerto:.1f}%"
 
         messagebox.showinfo(
             "Resultados Finais", 
             f"A simulação avançou instantaneamente para o passo {self.T_MAX}.\n\n"
-            f"Score Final Atingido: {self.score_atual}\n"
-            f"Alvo Esperado: {self.pontuacao_final_calculada}"
-            f"{percentagem}"
+            f"Score Final Atingido: {self.score_atual}"
         )
 
     def desenhar(self):
         self.canvas.delete("all")
         self.lbl_passo.config(text=f"Passo: {self.passo_atual} / {self.T_MAX}")
-        self.lbl_score.config(text=f"Score: {self.score_atual} (Alvo: {self.pontuacao_final_calculada})")
-        self.lbl_target.config(text=f"Alvo: {self.pontuacao_final_calculada}")
+        self.lbl_score.config(text=f"Score: {self.score_atual} | Pontuação Final: {self.pontuacao_final_calculada}")
         
         if max(self.R, self.C) < 100:
             for i in range(self.R + 1):

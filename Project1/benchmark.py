@@ -4,12 +4,15 @@ import os
 import glob
 from main import (
     read_input, distance, can_take_ride,
-    solve_greedy, solve_smart_greedy,
+    solve_greedy, solve_smart_greedy, solve_randomized_greedy, # Adicionado aqui
     solve_hill_climbing, solve_simulated_annealing, solve_genetic_algorithm
 )
 
 def run_benchmark():
     ficheiros = glob.glob("input/*.in") + glob.glob("input/*.txt")
+    
+    # ORDENAR ALFABETICAMENTE
+    ficheiros.sort()
     
     if not ficheiros:
         print("Nenhum ficheiro encontrado na pasta 'input/'.")
@@ -19,6 +22,7 @@ def run_benchmark():
     algoritmos = [
         {"nome": "Greedy Simples", "func": solve_greedy},
         {"nome": "Smart Greedy", "func": solve_smart_greedy},
+        {"nome": "Randomized Greedy", "func": solve_randomized_greedy}, # Novo competidor!
         {"nome": "Hill Climbing", "func": solve_hill_climbing},
         {"nome": "Simulated Annealing", "func": solve_simulated_annealing},
         {"nome": "Genetic Algorithm", "func": solve_genetic_algorithm}
@@ -44,12 +48,11 @@ def run_benchmark():
             continue
 
         for algo in algoritmos:
-            # Forçamos a 1 única ronda para não demorar uma eternidade no teu computador
-            num_runs = 1 
-            
             print(f"  A testar {algo['nome']}...", end="", flush=True)
             
             start_time = time.perf_counter()
+            # Nota: O randomized_greedy tem o parâmetro alpha, mas como as outras 
+            # funções só recebem (F, B, rides), ele vai usar o alpha=0.3 default.
             _, score = algo["func"](F, B, rides)
             end_time = time.perf_counter()
             

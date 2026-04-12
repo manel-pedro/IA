@@ -3,6 +3,7 @@ import os
 import glob
 import math
 import random
+import time
 from visuals import VisualizadorHashcode
 
 # ==========================================
@@ -17,6 +18,7 @@ def read_input(file_path=None):
         target_file = sys.argv[1]
     else:
         ficheiros_input = glob.glob("input/*.txt") + glob.glob("input/*.in")
+        ficheiros_input.sort()
         if ficheiros_input:
             target_file = ficheiros_input[0]
             print(f"Nenhum argumento fornecido. A usar o ficheiro default: {target_file}")
@@ -169,6 +171,9 @@ def solve_randomized_greedy(F, B, rides, alpha=0.3):
         cars.sort(key=lambda c: c["time"])
         car = cars[0]
 
+        if car["time"] == float('inf'):
+            break
+
         candidates = []
         for ride_id in unassigned:
             ok, s, f = can_take_ride(car, rides[ride_id], B)
@@ -254,7 +259,7 @@ def solve_hill_climbing(F, B, rides):
     best_sol = sol
     no_improve = 0
 
-    for _ in range(500):
+    for _ in range(2000):
         neighbor = random_neighbor(sol)
         ncars, nscore = solution_to_cars(neighbor, rides, B)
 
@@ -269,7 +274,7 @@ def solve_hill_climbing(F, B, rides):
         else:
             no_improve += 1
 
-        if no_improve > 100:
+        if no_improve > 300:
             break
 
     return solution_to_cars(best_sol, rides, B)
@@ -321,7 +326,7 @@ def crossover(parent1, parent2, F):
                 
     return child
 
-def solve_genetic_algorithm(F, B, rides, pop_size=20, generations=100, mutation_rate=0.4):
+def solve_genetic_algorithm(F, B, rides, pop_size=100, generations=250, mutation_rate=0.4):
     population = []
     
     base_sol = cars_to_solution(solve_randomized_greedy(F, B, rides)[0])
@@ -378,21 +383,104 @@ def solve_genetic_algorithm(F, B, rides, pop_size=20, generations=100, mutation_
 # MAIN
 # ==========================================
 
-def main():
-    print("A inicializar...")
-    R, C, F, _, B, T, rides = read_input()
+def terminal_mode():
+    ficheiros = glob.glob("input/*.in") + glob.glob("input/*.txt")
+    ficheiros.sort()
+    
+    if not ficheiros:
+        print("\n[ERRO] Nenhum ficheiro encontrado na pasta 'input/'.")
+        return
+        
+    print("\n" + "="*30)
+    print(" ESCOLHA O FICHEIRO")
+    print("="*30)
+    for i, f in enumerate(ficheiros):
+        print(f" [{i+1}] {os.path.basename(f)}")
+        
+    try:
+        op_ficheiro = int(input("\nOpção (número): ")) - 1
+        ficheiro_escolhido = ficheiros[op_ficheiro]
+    except (ValueError, IndexError):
+        print("Opção inválida. A sair...")
+        return
+        
+    algoritmos = [
+        ("Greedy Simples", solve_greedy),
+        ("Smart Greedy", solve_smart_greedy),
+        ("Randomized Greedy", solve_randomized_greedy),
+        ("Hill Climbing", solve_hill_climbing),
+        ("Simulated Annealing", solve_simulated_annealing),
+        ("Algoritmo Genético", solve_genetic_algorithm)
+    ]
+    
+    print("\n" + "="*30)
+    print(" ESCOLHA O ALGORITMO")
+    print("="*30)
+    for i, (nome, _) in enumerate(algoritmos):
+        print(f" [{i+1}] {nome}")
+        
+    try:
+        op_algo = int(input("\nOpção (número): ")) - 1
+        nome_algo, func_algo = algoritmos[op_algo]
+    except (ValueError, IndexError):
+        print("Opção inválida. A sair...")
+        return
+        
+    print(f"\n[1/3] A ler o ficheiro {os.path.basename(ficheiro_escolhido)}...")
+    R, C, F, N, B, T_MAX, rides = read_input(ficheiro_escolhido)
+    
+    print(f"[2/3] A executar {nome_algo}... (Aguarde)")
+    start = time.perf_counter()
+    
+    cars_schedule, score = func_algo(F, B, rides)
+    
+    end = time.perf_counter()
+    tempo = end - start
+    
+    print(f"[3/3] Concluído em {tempo:.4f} segundos!")
+    print("\n" + "★"*30)
+    print(f" RESULTADO FINAL: {score} pontos")
+    print("★"*30)
+    
+    # Gravar o ficheiro de output formatado como manda o Hash Code
+    nome_output = f"output_{os.path.basename(ficheiro_escolhido)}"
+    write_output(cars_schedule, nome_output)
+    print(f"\nA solução foi guardada no ficheiro: {nome_output}\n")
 
-    print("A abrir o simulador visual...")
-    app = VisualizadorHashcode(
-        R, C, F, T, B, rides,
-        solve_greedy,
-        solve_smart_greedy,
-        solve_hill_climbing,
-        solve_simulated_annealing,
-        solve_genetic_algorithm,
-        read_input,
-    )
-    app.iniciar()
+
+def main():
+    print("="*40)
+    print("   SELF-DRIVING RIDES (IA)")
+    print("="*40)
+    print(" [1] Modo Terminal (Rápido / Output File)")
+    print(" [2] Modo Visual (Interface Gráfica Tkinter)")
+    print(" [0] Sair")
+    
+    op = input("\nEscolha como quer arrancar: ")
+    
+    if op == '1':
+        terminal_mode()
+    elif op == '2':
+        print("\nA inicializar interface gráfica...")
+        try:
+            # Lê o primeiro ficheiro por default para arrancar a UI
+            R, C, F, _, B, T_MAX, rides = read_input()
+            app = VisualizadorHashcode(
+                R, C, F, T_MAX, B, rides,
+                solve_greedy,
+                solve_smart_greedy,
+                solve_hill_climbing,
+                solve_simulated_annealing,
+                solve_genetic_algorithm,
+                read_input,
+            )
+            app.iniciar()
+        except Exception as e:
+            print(f"Erro ao abrir interface: {e}")
+    elif op == '0':
+        print("A sair. Bom trabalho!")
+    else:
+        print("Opção inválida.")
 
 if __name__ == "__main__":
     main()
