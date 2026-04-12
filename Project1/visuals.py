@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import os
 import glob
 
@@ -7,7 +7,6 @@ def distance(a, b, x, y):
     return abs(a - x) + abs(b - y)
 
 class VisualizadorHashcode:
-    # Adicionamos 'func_read_file' para o visualizador conseguir carregar novos ficheiros
     def __init__(self, R, C, F, T_MAX, B, rides, func_greedy, func_smart, func_hill_climbing, func_simulated_annealing, func_genetic, func_read_file):
         self.R = R
         self.C = C
@@ -21,15 +20,13 @@ class VisualizadorHashcode:
         self.func_hill_climbing = func_hill_climbing
         self.func_simulated_annealing = func_simulated_annealing
         self.func_genetic = func_genetic 
-        self.func_read_file = func_read_file # <--- Nova função recebida
+        self.func_read_file = func_read_file
 
-        # Variável para rastrear qual é o algoritmo ativo (1 a 5). Começa no 2 (Smart Greedy)
         self.algoritmo_ativo = 2 
 
-        self.max_canvas_width = 900
-        self.max_canvas_height = 550
+        self.max_canvas_width = 1180
+        self.max_canvas_height = 720
         
-        # Correr o Smart Greedy por defeito ao abrir
         self.cars_schedule, self.pontuacao_final_calculada = self.func_smart(self.F, self.B, self.rides)
         
         self.passo_atual = 0
@@ -43,7 +40,7 @@ class VisualizadorHashcode:
 
         self.root = tk.Tk()
         self.root.title("Simulador Hash Code")
-        self.root.geometry("1000x700")
+        self.root.geometry("1280x900")
         self.root.minsize(1000, 720)
         self.root.configure(bg="#0f172a")
         
@@ -53,7 +50,6 @@ class VisualizadorHashcode:
     def _calcular_tamanho_celula(self):
         if self.R <= 0 or self.C <= 0:
             return 20
-
         fit_width = max(1, self.max_canvas_width // self.C)
         fit_height = max(1, self.max_canvas_height // self.R)
         return max(1, min(24, fit_width, fit_height))
@@ -73,7 +69,6 @@ class VisualizadorHashcode:
         self.em_execucao = False
         self.algoritmo_ativo = tipo
         
-        # Recalcular as rotas com o algoritmo escolhido
         if tipo == 1:
             self.cars_schedule, self.pontuacao_final_calculada = self.func_greedy(self.F, self.B, self.rides)
             self.lbl_algo_ativo.config(text="Ativo: Greedy Simples")
@@ -93,23 +88,13 @@ class VisualizadorHashcode:
         self.restart()
 
     def carregar_ficheiro(self, event=None):
-        """Carrega um novo ficheiro de input e repõe o visualizador"""
         ficheiro_selecionado = self.combo_ficheiros.get()
         if not ficheiro_selecionado: return
-        
         caminho_completo = os.path.join("input", ficheiro_selecionado)
-        
-        # Parar simulação atual
         self.em_execucao = False
-        
-        # Ler novos dados usando a função do main.py
         self.R, self.C, self.F, N, self.B, self.T_MAX, self.rides = self.func_read_file(caminho_completo)
-        
-        # Atualizar Labels
         self.lbl_rides.config(text=f"Viagens: {len(self.rides)}")
         self.tam_celula = self._calcular_tamanho_celula()
-        
-        # Recalcular usando o algoritmo que estava selecionado
         self.mudar_algoritmo(self.algoritmo_ativo)
 
     def setup_ui(self):
@@ -144,12 +129,10 @@ class VisualizadorHashcode:
         ttk.Label(title_block, text="Simulador Hash Code", style="Title.TLabel").pack(anchor="w")
         ttk.Label(title_block, text="Local search and greedy solvers on the ride scheduling problem", style="Meta.TLabel").pack(anchor="w", pady=(2, 0))
 
-        # --- NOVO SELECTOR DE FICHEIROS NO CABEÇALHO ---
         file_frame = ttk.Frame(header, style="Header.TFrame")
         file_frame.grid(row=0, column=1, sticky="e", padx=(16, 16))
         ttk.Label(file_frame, text="Dataset:", style="Meta.TLabel").pack(side=tk.LEFT, padx=5)
         
-        # Procurar ficheiros na pasta input/
         if os.path.exists("input"):
             ficheiros_input = [os.path.basename(f) for f in glob.glob("input/*.txt") + glob.glob("input/*.in")]
         else:
@@ -157,10 +140,9 @@ class VisualizadorHashcode:
 
         self.combo_ficheiros = ttk.Combobox(file_frame, values=ficheiros_input, state="readonly", width=25)
         if ficheiros_input:
-            self.combo_ficheiros.set(ficheiros_input[0]) # Selecionar o primeiro por defeito
+            self.combo_ficheiros.set(ficheiros_input[0])
         self.combo_ficheiros.pack(side=tk.LEFT)
         self.combo_ficheiros.bind("<<ComboboxSelected>>", self.carregar_ficheiro)
-
 
         info_frame = ttk.Frame(header, style="Header.TFrame")
         info_frame.grid(row=0, column=2, sticky="e")
@@ -206,6 +188,7 @@ class VisualizadorHashcode:
         ttk.Button(actions, text="Play", command=self.play).pack(side=tk.LEFT, padx=(0, 6))
         ttk.Button(actions, text="Pause", command=self.pause).pack(side=tk.LEFT, padx=6)
         ttk.Button(actions, text="+1 Passo", command=self.proximo_passo).pack(side=tk.LEFT, padx=6)
+        ttk.Button(actions, text="Saltar para o Fim ⏩", command=self.saltar_para_fim).pack(side=tk.LEFT, padx=6)
         ttk.Button(actions, text="Restart", command=self.restart).pack(side=tk.LEFT, padx=6)
 
         canvas_shell = ttk.Frame(container, style="App.TFrame")
@@ -228,9 +211,6 @@ class VisualizadorHashcode:
         y_scroll.grid(row=0, column=1, sticky="ns")
         x_scroll.grid(row=1, column=0, sticky="ew")
 
-        canvas_shell.rowconfigure(0, weight=1)
-        canvas_shell.columnconfigure(0, weight=1)
-
     def mover_para(self, r_atual, c_atual, r_dest, c_dest):
         if r_atual < r_dest: r_atual += 1
         elif r_atual > r_dest: r_atual -= 1
@@ -238,11 +218,8 @@ class VisualizadorHashcode:
         elif c_atual > c_dest: c_atual -= 1
         return r_atual, c_atual
 
-    def proximo_passo(self):
-        if self.passo_atual >= self.T_MAX:
-            self.em_execucao = False
-            return
-
+    def logica_carros(self):
+        """Avança a matemática da simulação sem desenhar (para ser mais rápido)"""
         for carro in self.carros_sim:
             if carro["estado"] == 'CONCLUIDO': continue
             
@@ -279,11 +256,41 @@ class VisualizadorHashcode:
                     else:
                         carro["estado"] = 'A_CAMINHO_PARTIDA'
 
+    def proximo_passo(self):
+        if self.passo_atual >= self.T_MAX:
+            self.em_execucao = False
+            return
+
+        self.logica_carros()
         self.passo_atual += 1
         self.desenhar()
         
         if self.em_execucao:
             self.root.after(300, self.proximo_passo)
+
+    def saltar_para_fim(self):
+        """Corre a simulação até ao fim num milissegundo e mostra resultados"""
+        self.em_execucao = False
+        
+        while self.passo_atual < self.T_MAX:
+            self.logica_carros()
+            self.passo_atual += 1
+            
+        self.desenhar()
+        
+        # Calcular percentagem de sucesso face à predição
+        percentagem = ""
+        if self.pontuacao_final_calculada > 0:
+            acerto = (self.score_atual / self.pontuacao_final_calculada) * 100
+            percentagem = f"\n\nDesempenho Otimizado: {acerto:.1f}%"
+
+        messagebox.showinfo(
+            "Resultados Finais", 
+            f"A simulação avançou instantaneamente para o passo {self.T_MAX}.\n\n"
+            f"Score Final Atingido: {self.score_atual}\n"
+            f"Alvo Esperado: {self.pontuacao_final_calculada}"
+            f"{percentagem}"
+        )
 
     def desenhar(self):
         self.canvas.delete("all")
@@ -293,9 +300,9 @@ class VisualizadorHashcode:
         
         if max(self.R, self.C) < 100:
             for i in range(self.R + 1):
-                self.canvas.create_line(0, i*self.tam_celula, self.C*self.tam_celula, i*self.tam_celula, fill="#eee")
+                self.canvas.create_line(0, i*self.tam_celula, self.C*self.tam_celula, i*self.tam_celula, fill="#1e293b")
             for j in range(self.C + 1):
-                self.canvas.create_line(j*self.tam_celula, 0, j*self.tam_celula, self.R*self.tam_celula, fill="#eee")
+                self.canvas.create_line(j*self.tam_celula, 0, j*self.tam_celula, self.R*self.tam_celula, fill="#1e293b")
                 
         for carro in self.carros_sim:
             if carro["estado"] != 'CONCLUIDO':
@@ -305,23 +312,17 @@ class VisualizadorHashcode:
                 self.canvas.create_oval(b*self.tam_celula+4, a*self.tam_celula+4, b*self.tam_celula+4+marker, a*self.tam_celula+4+marker, fill="#22c55e", outline="")
                 self.canvas.create_oval(y*self.tam_celula+4, x*self.tam_celula+4, y*self.tam_celula+4+marker, x*self.tam_celula+4+marker, fill="#ef4444", outline="")
                 
-        cores = [
-            "#3b82f6",  # azul moderno
-            "#8b5cf6",  # roxo
-            "#f59e0b",  # laranja
-            "#10b981",  # verde
-        ]
         for carro in self.carros_sim:
             cy = carro["r"] * self.tam_celula + (self.tam_celula//2)
             cx = carro["c"] * self.tam_celula + (self.tam_celula//2)
             if carro["estado"] == 'A_CAMINHO_PARTIDA':
-                cor = "#3b82f6"  # azul
+                cor = "#3b82f6" 
             elif carro["estado"] == 'ESPERA':
-                cor = "#eab308"  # amarelo
+                cor = "#eab308"  
             elif carro["estado"] == 'COM_PASSAGEIRO':
-                cor = "#22c55e"  # verde
+                cor = "#22c55e"  
             else:
-                cor = "#6b7280"  # cinza
+                cor = "#6b7280"  
             half = max(4, min(12, self.tam_celula // 2))
             self.canvas.create_rectangle(cx-half, cy-half, cx+half, cy+half, fill=cor, outline="")
             self.canvas.create_text(cx, cy, text=str(carro["id"]), fill="white", font=("Helvetica", 8, "bold"))
