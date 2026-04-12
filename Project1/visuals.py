@@ -26,8 +26,8 @@ class VisualizadorHashcode:
         # Variável para rastrear qual é o algoritmo ativo (1 a 5). Começa no 2 (Smart Greedy)
         self.algoritmo_ativo = 2 
 
-        self.max_canvas_width = 1180
-        self.max_canvas_height = 720
+        self.max_canvas_width = 900
+        self.max_canvas_height = 550
         
         # Correr o Smart Greedy por defeito ao abrir
         self.cars_schedule, self.pontuacao_final_calculada = self.func_smart(self.F, self.B, self.rides)
@@ -43,7 +43,7 @@ class VisualizadorHashcode:
 
         self.root = tk.Tk()
         self.root.title("Simulador Hash Code")
-        self.root.geometry("1280x900")
+        self.root.geometry("1000x700")
         self.root.minsize(1000, 720)
         self.root.configure(bg="#0f172a")
         
@@ -305,11 +305,23 @@ class VisualizadorHashcode:
                 self.canvas.create_oval(b*self.tam_celula+4, a*self.tam_celula+4, b*self.tam_celula+4+marker, a*self.tam_celula+4+marker, fill="#22c55e", outline="")
                 self.canvas.create_oval(y*self.tam_celula+4, x*self.tam_celula+4, y*self.tam_celula+4+marker, x*self.tam_celula+4+marker, fill="#ef4444", outline="")
                 
-        cores = ["blue", "purple", "orange", "black"]
+        cores = [
+            "#3b82f6",  # azul moderno
+            "#8b5cf6",  # roxo
+            "#f59e0b",  # laranja
+            "#10b981",  # verde
+        ]
         for carro in self.carros_sim:
             cy = carro["r"] * self.tam_celula + (self.tam_celula//2)
             cx = carro["c"] * self.tam_celula + (self.tam_celula//2)
-            cor = "gray" if carro["estado"] == 'CONCLUIDO' else cores[carro["id"] % len(cores)]
+            if carro["estado"] == 'A_CAMINHO_PARTIDA':
+                cor = "#3b82f6"  # azul
+            elif carro["estado"] == 'ESPERA':
+                cor = "#eab308"  # amarelo
+            elif carro["estado"] == 'COM_PASSAGEIRO':
+                cor = "#22c55e"  # verde
+            else:
+                cor = "#6b7280"  # cinza
             half = max(4, min(12, self.tam_celula // 2))
             self.canvas.create_rectangle(cx-half, cy-half, cx+half, cy+half, fill=cor, outline="")
             self.canvas.create_text(cx, cy, text=str(carro["id"]), fill="white", font=("Helvetica", 8, "bold"))

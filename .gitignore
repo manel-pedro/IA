@@ -1,3 +1,4 @@
 Notebooks/.ipynb_checkpoints
 Notebooks/.virtual_documents
 output.txt
+__pycache__/
