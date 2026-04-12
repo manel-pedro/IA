@@ -1,2 +1,5 @@
-# IA
-Saiu na roleta este grupo
+Each group must submit two files on Moodle: a presentation (max. 10 slides) in PDF format and the implemented code, properly commented, including a “readme” file with instructions on how to compile, run, and use the program.
+
+Based on the submitted presentation, students will present and discuss their work in class.
+
+The file with the final presentation should include, in addition to the aforementioned for the checkpoint, details on: (1) the approach (heuristics, evaluation functions, operators, ...) and (2) implemented algorithms (search algorithms, metaheuristics), as well as (3) experimental results, using appropriate tables/plots and comparing the various methods, heuristics, algorithms and respective parameterizations for different scenarios/problems. The presentation should include a slide with conclusions and another with references and materials used (software, websites, scientific articles, ...).
