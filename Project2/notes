@@ -1,0 +1,31 @@
+teste3.py- usa RandomForest
+teste.py
+
+
+Available Data (Feature Explanation)
+
+The dataset contains demographic, academic, and behavioural information about each student:
+
+Student Age: Age group of the student (e.g., 18, 19–22, 23–27).
+Sex: Gender of the student.
+Graduated High-School Type: Type of high school attended (e.g., State, Private, Other).
+Scholarship Type: Percentage of tuition scholarship received (e.g., 50%, 75%, 100%). Higher values may indicate stronger academic performance or financial support.
+Additional Work: Whether the student has a job besides studying (Yes/No).
+Sports Activity: Participation in sports activities (Yes/No).
+Transportation: Main mode of transport to university (Bus or Private).
+
+
+Academic Behaviour Features
+Weekly Study Hours: Number of hours spent studying per week.
+Attendance: Class attendance level (Always, Sometimes, Never).
+Reading: Whether the student regularly reads course materials (Yes/No).
+Notes: Whether the student takes notes during classes (Yes/No).
+Listening in Class: Level of attention in class (Yes/No).
+Project Work: Participation and engagement in projects (Yes/No).
+
+
+Target Variable
+Grade: Final academic performance category (AA, BA, BB, CC, DD, Fail).
+
+
+
