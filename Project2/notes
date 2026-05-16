@@ -1,31 +1,17 @@
-teste3.py- usa RandomForest
-teste.py
+tirei daqui: https://www.kaggle.com/code/annastasy/predicting-students-grades
 
-
-Available Data (Feature Explanation)
-
-The dataset contains demographic, academic, and behavioural information about each student:
-
-Student Age: Age group of the student (e.g., 18, 19–22, 23–27).
-Sex: Gender of the student.
-Graduated High-School Type: Type of high school attended (e.g., State, Private, Other).
-Scholarship Type: Percentage of tuition scholarship received (e.g., 50%, 75%, 100%). Higher values may indicate stronger academic performance or financial support.
-Additional Work: Whether the student has a job besides studying (Yes/No).
-Sports Activity: Participation in sports activities (Yes/No).
-Transportation: Main mode of transport to university (Bus or Private).
-
-
-Academic Behaviour Features
-Weekly Study Hours: Number of hours spent studying per week.
-Attendance: Class attendance level (Always, Sometimes, Never).
-Reading: Whether the student regularly reads course materials (Yes/No).
-Notes: Whether the student takes notes during classes (Yes/No).
-Listening in Class: Level of attention in class (Yes/No).
-Project Work: Participation and engagement in projects (Yes/No).
-
-
-Target Variable
-Grade: Final academic performance category (AA, BA, BB, CC, DD, Fail).
-
-
-
+StudentID → Unique identifier for each student.
+Age → Student age.
+Gender → Student gender (0 = Female, 1 = Male).
+Ethnicity → Ethnicity group/category represented numerically.
+ParentalEducation → Parents’ education level (0–4, where higher values represent higher education levels).
+StudyTimeWeekly → Average number of study hours per week.
+Absences → Number of school absences.
+Tutoring → Whether the student receives tutoring support (0 = No, 1 = Yes).
+ParentalSupport → Level of parental support (0–4, from low to high support).
+Extracurricular → Participation in extracurricular activities (0 = No, 1 = Yes).
+Sports → Participation in sports activities (0 = No, 1 = Yes).
+Music → Participation in music-related activities (0 = No, 1 = Yes).
+Volunteering → Participation in volunteering activities (0 = No, 1 = Yes).
+GPA → Grade Point Average, representing the student’s academic performance.
+GradeClass → Final predicted/performance class (0–4, where lower values usually represent better academic performance).
