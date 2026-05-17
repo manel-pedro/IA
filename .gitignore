@@ -4,3 +4,5 @@ output.txt
 __pycache__/
 Project1/__pycache__/
 Project2/model.pkl
+.vscode/
+Project1/Project1.zip
